@@ -6,7 +6,7 @@ The code has been tested running under Python 3.9.18. To install the required pa
 pip install -r requirements.txt
 ```
 
-## Dataset
+## Datasets
 The directory structure and description of the dataset are as follows:
   *  .\dataset\douban\train.csv, .\dataset\douban\valid.csv, .\dataset\douban\test.csv, .\dataset\douban\social.csv.
   *  Each line in the train.csv, valid.csv and test.csv is a user with her/his positive interactions with items: userid \ itemid.
