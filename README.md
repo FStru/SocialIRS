@@ -1,4 +1,4 @@
-# This is our pytorch implementation for RFADT
+# This is our pytorch implementation for RFDAT
 
 ## Environment Requirement
 The code has been tested running under Python 3.9.18. To install the required packages, run the following command in the project terminal:
