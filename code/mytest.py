@@ -12,7 +12,6 @@ def test_model(args, test_loader, Recmodel, testDict, UserItemNet, device):
     results = getmetricsresult(args, rating_list, groundtrue_list)
     users = list(testDict.keys())
     results['recall'] /= float(len(users))
-    results['precision'] /= float(len(users))
     results['ndcg'] /= float(len(users))
     results['hit'] /= float(len(users))
 
@@ -56,13 +55,11 @@ def getmetricsresult(args, rating_list, groundTrue_list):
             pre_results.append(test_one_batch(x, eval(args.topks)))
 
         topks = eval(args.topks)
-        results = {'precision': np.zeros(len(topks)),
-                   'hit': np.zeros(len(topks)),
+        results = {'hit': np.zeros(len(topks)),
                    'recall': np.zeros(len(topks)),
                    'ndcg': np.zeros(len(topks))}
         for result in pre_results:
             results['recall'] += result['recall']
-            results['precision'] += result['precision']
             results['ndcg'] += result['ndcg']
             results['hit'] += result['hit']
         return results
