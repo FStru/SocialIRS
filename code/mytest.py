@@ -14,7 +14,6 @@ def test_model(args, test_loader, Recmodel, testDict, UserItemNet, device):
     results['recall'] /= float(len(users))
     results['ndcg'] /= float(len(users))
     results['hit'] /= float(len(users))
-
     return results
 
 def getRatingAndGroundtureList(args, test_loader, Recmodel, testDict, UserItemNet, device, max_K):
@@ -68,14 +67,12 @@ def test_one_batch(X, topks):
     sorted_items = X[0].numpy()
     groundTrue = X[1]
     r = getLabel(groundTrue, sorted_items)
-    pre, recall, ndcg, hit = [], [], [], []
+    recall, ndcg, hit = [], [], []
     for k in topks:
-        pre.append(calPrecision(r, k))
         recall.append(calRecall(groundTrue, r, k))
         ndcg.append(calNDCG(groundTrue, r, k))
         hit.append(calHit(r, k))
     return {'recall': np.array(recall),
-            'precision': np.array(pre),
             'ndcg': np.array(ndcg),
             'hit': np.array(hit)}
 

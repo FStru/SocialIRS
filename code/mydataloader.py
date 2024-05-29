@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2023/11/29 21:36
-# @Name    : mydataloader.py
-# @Author  : WY
 
 import torch
 import numpy as np
-
 
 def generator_train_collate(batch):
     item1 = [item[0] for item in batch]

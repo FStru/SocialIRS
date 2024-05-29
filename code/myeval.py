@@ -1,6 +1,7 @@
 # !/usr/bin/env python
 # -*-coding:utf-8 -*-
 
+
 import myutil
 import myparse
 import os
@@ -8,8 +9,13 @@ import torch
 from warnings import simplefilter
 import dataprocess
 import myhelper
+import pandas as pd
 import mymodel
+import mydataloader
+import mytrain
 import mytest
+import numpy as np
+import random
 
 import sys
 sys.path.append("..")
@@ -17,16 +23,12 @@ import myxlsx as myxl
 
 def main():
     logger = myutil.get_logger()
-    logger.info("-------------------->>parse arguments<<--------------------")
     args = myparse.parse_args()
-    for key in list(vars(args).keys()):
-        logger.info("{}:{}".format(key, vars(args)[key]))
     if not os.path.exists(args.save):
         os.makedirs(args.save, exist_ok=True)
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
     myutil.set_seed(args.seed)
     simplefilter(action="ignore", category=FutureWarning)
-
 
     logger.info("-------------------->>prepare data<<--------------------")
     trainfile = "../dataset/{}/train.csv".format(args.dataset)
@@ -57,11 +59,6 @@ def main():
     Recmodel.load_state_dict(torch.load(args.pretrainmodel))
     Recmodel = Recmodel.to(device)
 
-    for name, parameters in Recmodel.named_parameters():
-        logger.info(str(name) + ':' + str(parameters.size()))
-    for name, param in Recmodel.named_parameters():
-        if param.requires_grad:
-            logger.info(str(name) + ':' + str(param.size()))
 
     logger.info("-------------------->>testing<<--------------------")
     logger.info("testing from all item...")
@@ -78,7 +75,7 @@ def main():
     logger.info(all_results)
 
     HeadTestDic, TailTestDic = preparedata.getUserLongTailTest(args.colddegree)
-    logger.info("testing warm users from all item...")
+    logger.info("testing head user from all item...")
     candidate_users = list(HeadTestDic.keys())
     try:
         assert args.testbatch <= len(candidate_users) / 10
@@ -91,7 +88,7 @@ def main():
     head_results = mytest.test_model(args, test_loader, Recmodel, HeadTestDic, UserItemNet, device)
     logger.info(head_results)
 
-    logger.info("testing cold users from all item...")
+    logger.info("testing tail user from all item...")
     candidate_users = list(TailTestDic.keys())
     try:
         assert args.testbatch <= len(candidate_users) / 10
@@ -104,7 +101,6 @@ def main():
     tail_results = mytest.test_model(args, test_loader, Recmodel, TailTestDic, UserItemNet, device)
     logger.info(tail_results)
     # myxl.append_xlsx_detail(args.model + '-' + args.dataset, all_results, head_results, tail_results)
-
 
 if __name__ == "__main__":
     main()

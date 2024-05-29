@@ -5,7 +5,6 @@
 import numpy as np
 import torch.nn as nn
 import torch
-from copy import deepcopy
 import scipy
 import myhelper
 
@@ -29,15 +28,12 @@ class Generator(nn.Module):
         torch.nn.init.normal_(self.embedding_item.weight, std=0.1)
         self.item_total_emb_dim = self.latent_dim
         self.encoder = nn.Sequential(nn.Linear(self.item_total_emb_dim, 256, bias=True), nn.ReLU(), nn.Linear(256, self.item_total_emb_dim, bias=True), nn.ReLU())
+        self.decoder = nn.Sequential(nn.Linear(self.item_total_emb_dim, 256, bias=True), nn.ReLU(), nn.Linear(256, self.item_total_emb_dim, bias=True))
 
     def encode(self, item_id):
         batch_item_feature_embedded = self.embed_feature(item_id).float()
         batch_item_feature_encoded = self.encoder(batch_item_feature_embedded)
         return batch_item_feature_encoded
-
-    def decode(self, batch_item_feature_encoded):
-        pre_item_id_embedded = self.decoder(batch_item_feature_encoded)
-        return pre_item_id_embedded
 
     def embed_feature(self, item_id):
         batch_item_feature_embedded = self.embedding_item.weight[item_id]
@@ -54,7 +50,6 @@ class RFDAT(nn.Module):
         self.latent_dim = args.hdim
         self.inter_layers = args.ilayers
         self.social_layers = args.slayers
-        self.item_layers = args.tlayers
         self.num_users = n_user
         self.num_items = n_item
         self.interactionGraph = interactionGraph
@@ -62,12 +57,13 @@ class RFDAT(nn.Module):
         self.device = device
         self.f = torch.nn.Sigmoid()
         self.dataset = args.dataset
+        self.convergence = args.g_convergence
         self.link_topk = args.g_linktopk
         self.itemdegree = itemdegree
-        self.convergence = args.g_convergence
         sorted_item_degrees = sorted(itemdegree.items(), key=lambda x: x[0])
         _, item_degree_list = zip(*sorted_item_degrees)
         self.item_degree_numpy = np.array(item_degree_list)
+
         degree_to_item_list, degree_to_item_num = myhelper.degree_to_object(itemdegree, range(self.num_items))
         self.head_item, self.tail_item = myhelper.coldNodeProcess(degree_to_item_list, coldDegree=args.colddegree)
         self.tail_item_non01 = myhelper.coldNodeProcessNon01(degree_to_item_list, coldDegree=args.colddegree)
@@ -117,6 +113,7 @@ class RFDAT(nn.Module):
         items_embs_final = items_embs_lists[0] + sum_weight * items_embs_lists[1]
         return users_embs_final, items_embs_final
 
+
     def getembedding(self, fast_weights=None):
         if self.training:
             item_row_index, item_colomn_index, enhance_weight = self.item_link_predict_v1(self.tail_item, self.head_item, fast_weights)
@@ -145,6 +142,7 @@ class RFDAT(nn.Module):
                               posEmb0.norm(2).pow(2) +
                               negEmb0.norm(2).pow(2)) / float(len(batch_user))
         return loss, reg_loss
+
 
     def getUsersRating(self, users):
         all_users, all_items = self.final_user, self.final_item
@@ -178,41 +176,35 @@ class RFDAT(nn.Module):
         tail_item_embedded = torch.mm(tail_item_hidden, encoder_2_weight.t()) + encoder_2_bias
         i2i_score = torch.mm(tail_item_embedded, top_item_embedded.permute(1, 0))
         i2i_score_masked, indices = i2i_score.topk(self.link_topk, dim=-1)
-
         tail_item_index = item_tail.unsqueeze(1).expand_as(i2i_score).gather(1, indices).reshape(-1)
         top_item_index = item_top.unsqueeze(0).expand_as(i2i_score).gather(1, indices).reshape(-1)
         row_index = tail_item_index.unsqueeze(0)
         colomn_index = top_item_index.unsqueeze(0)
-
         i2i_score_masked = i2i_score_masked.sigmoid()
         tail_item_degree = torch.sum(i2i_score_masked, dim=1)
         tail_item_degree = torch.pow(tail_item_degree + 1, -1).unsqueeze(1).expand_as(i2i_score_masked).reshape(-1)
         enhanced_value = i2i_score_masked.reshape(-1)
         joint_enhanced_value = enhanced_value * tail_item_degree
         enhance_weight = joint_enhanced_value
-
         return row_index, colomn_index, enhance_weight
 
 
     def item_link_predict_v1_forTest(self, tail_item, head_item):
         item_tail = torch.tensor(tail_item).to(self.device)
         item_top = torch.tensor(head_item).to(self.device)
-
         top_item_embedded = self.generator.encode(item_top)
         tail_item_embedded = self.generator.encode(item_tail)
         i2i_score = torch.mm(tail_item_embedded, top_item_embedded.permute(1, 0))
         i2i_score_masked, indices = i2i_score.topk(self.link_topk, dim=-1)
-
         tail_item_index = item_tail.unsqueeze(1).expand_as(i2i_score).gather(1, indices).reshape(-1)
         top_item_index = item_top.unsqueeze(0).expand_as(i2i_score).gather(1, indices).reshape(-1)
         row_index = tail_item_index.unsqueeze(0)
         colomn_index = top_item_index.unsqueeze(0)
-
         i2i_score_masked = i2i_score_masked.sigmoid()
         tail_item_degree = torch.sum(i2i_score_masked, dim=1)
         tail_item_degree = torch.pow(tail_item_degree + 1, -1).unsqueeze(1).expand_as(i2i_score_masked).reshape(-1)
         enhanced_value = i2i_score_masked.reshape(-1)
         joint_enhanced_value = enhanced_value * tail_item_degree
         enhance_weight = joint_enhanced_value
-
         return row_index, colomn_index, enhance_weight
+

@@ -180,5 +180,3 @@ def degreestatistic(obj_inter_dic):
     return degree_to_obj_define
 
 
-
-

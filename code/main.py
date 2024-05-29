@@ -16,16 +16,12 @@ import mytest
 
 def main():
     logger = myutil.get_logger()
-    logger.info("-------------------->>parse arguments<<--------------------")
     args = myparse.parse_args()
-    for key in list(vars(args).keys()):
-        logger.info("{}:{}".format(key, vars(args)[key]))
     if not os.path.exists(args.save):
         os.makedirs(args.save, exist_ok=True)
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
     myutil.set_seed(args.seed)
     simplefilter(action="ignore", category=FutureWarning)
-
 
     logger.info("-------------------->>prepare data<<--------------------")
     trainfile = "../dataset/{}/train.csv".format(args.dataset)
@@ -51,18 +47,13 @@ def main():
     socialGraph = myhelper._convert_sp_mat_to_sp_tensor(social_norm_adj)
     socialGraph = socialGraph.coalesce().to(device)
 
-    first_path = os.path.join("middata", args.dataset)
+    first_path = os.path.join("./middata", args.dataset)
     i2i_pair = pd.read_csv(os.path.join(first_path, "doubanH.csv"), index_col=0)
     itemtrainPos, itemtrainSize = myhelper.i2i_pairs_process(i2i_pair, n_item)
 
     logger.info("-------------------->>prepare model<<--------------------")
     Recmodel = mymodel.RFDAT(args, n_user, n_item, interactionGraph, socialGraph, userdegree, itemdegree, device)
     Recmodel = Recmodel.to(device)
-    for name, parameters in Recmodel.named_parameters():
-        logger.info(str(name) + ':' + str(parameters.size()))
-    for name, param in Recmodel.named_parameters():
-        if param.requires_grad:
-            logger.info(str(name) + ':' + str(param.size()))
     opt = torch.optim.Adam(Recmodel.parameters(), lr=args.lr)
     if args.lr_decay:
         StepLR = torch.optim.lr_scheduler.StepLR(opt, step_size=args.lr_decay_len,
@@ -76,7 +67,7 @@ def main():
         generator_trainloader = mydataloader.generate_traindataloader(generator_sampleSet, args.g_batch)
 
         etgsr_sampleSet, negativeSet = mydataloader.generate_trainsample_multi(n_user, n_item, usertrainPos, trainDataSize,
-                                                                               negsample=args.negativenum)
+                                                                         negsample=args.negativenum)
         etgsr_trainloader = mydataloader.generate_traindataloader_multi(etgsr_sampleSet, negativeSet, args.trainbatch)
 
         batch_loss_avg, etgsr_loss_avg, u2i_loss_avg, l2_loss_avg, generator_loss_avg, i2i_loss_avg, reg_loss_avg = \
@@ -98,6 +89,7 @@ def main():
             candidate_users = torch.Tensor(candidate_users).long()
             testset = torch.utils.data.TensorDataset(candidate_users)
             test_loader = torch.utils.data.DataLoader(testset, batch_size=args.testbatch, shuffle=True)
+
             results = mytest.test_model(args, test_loader, Recmodel, uservalidDic, UserItemNet, device)
             logger.info(results)
             if results['ndcg'][0] < best_ndcg:
@@ -122,6 +114,7 @@ def main():
             candidate_users = torch.Tensor(candidate_users).long()
             testset = torch.utils.data.TensorDataset(candidate_users)
             test_loader = torch.utils.data.DataLoader(testset, batch_size=args.testbatch, shuffle=True)
+
             testresults = mytest.test_model(args, test_loader, Recmodel, usertestDic, UserItemNet, device)
             logger.info(testresults)
 
@@ -129,6 +122,7 @@ def main():
     TestRecmodel = mymodel.RFDAT(args, n_user, n_item, interactionGraph, socialGraph, userdegree, itemdegree, device)
     TestRecmodel.load_state_dict(torch.load(save_model_file))
     TestRecmodel = TestRecmodel.to(device)
+
     candidate_users = list(usertestDic.keys())
     try:
         assert args.testbatch <= len(candidate_users) / 10

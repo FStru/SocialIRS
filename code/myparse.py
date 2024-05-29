@@ -1,7 +1,6 @@
 # !/usr/bin/env python
 # -*-coding:utf-8 -*-
 
-
 import argparse
 
 def parse_args():
@@ -10,7 +9,6 @@ def parse_args():
     parser.add_argument('--dataset', type=str, default='douban')
     parser.add_argument('--pretrainmodel', type=str, default='./save')
     parser.add_argument('--preitemrelation', action='store_true')
-
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lr_decay', action='store_true')
     parser.add_argument('--lr_decay_len', type=int, default=30)
@@ -18,7 +16,6 @@ def parse_args():
     parser.add_argument('--negativenum', type=int, default=1)
     parser.add_argument('--ilayers', type=int, default=1)
     parser.add_argument('--slayers', type=int, default=1)
-    parser.add_argument('--tlayers', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--trainbatch', type=int, default=2048)
     parser.add_argument('--testbatch', type=str, default=100)
@@ -31,9 +28,7 @@ def parse_args():
     parser.add_argument("--g_convergence", type=int, default=40)
     parser.add_argument("--g_lr", type=float, default=0.01)
     parser.add_argument("--g_linktopk", type=int, default=5)
-
     parser.add_argument('--seed', type=int, default=2020, help='random seed')
     parser.add_argument('--save', type=str, default='./save')
     args = parser.parse_args()
-
     return args

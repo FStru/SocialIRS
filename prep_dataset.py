@@ -9,7 +9,6 @@ import random
 
 class PrepDouban():
     def dataPreprocess(self):
-
         prime = []
         f = open(f'./dataset/raw_data/douban/ratings.txt', encoding='utf-8')
         for line in f:

@@ -83,7 +83,7 @@ def generate_preedge_bycos(preitemedgesfile, itemrep_matrix, item_num, itemdegre
     i2i_pair = list(zip(rowid, colid, value))
     i2i_pair_upd = []
     for ele in i2i_pair:
-        if ele[0] != ele[1] and ele[2] > 0.5 and ele[2] < 1:
+        if ele[0] != ele[1] and ele[2] > 0.5 and ele[2] < 0.9:
             i2i_pair_upd.append([ele[0], ele[1], ele[2]])
     i2i_pair_dict = defaultdict(set)
     for ele in i2i_pair_upd:
