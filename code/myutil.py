@@ -5,6 +5,7 @@ import logging
 import datetime
 import numpy as np
 import torch
+import os
 
 def set_seed(seed):
     np.random.seed(seed)
@@ -15,6 +16,8 @@ def set_seed(seed):
 
 
 def get_logger():
+    if not os.path.exists("./log"):
+        os.makedirs("./log", exist_ok=True)
     logger = logging.getLogger('log_test')
     logger.setLevel(level=logging.DEBUG)
     local_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
